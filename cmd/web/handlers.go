@@ -1,40 +1,32 @@
 package main
 
 import (
+	"errors"
 	"fmt"
-	"html/template"
 	"net/http"
 	"strconv"
+
+	"snippetbox.faisal135711.net/internal/models"
 )
 
 func (app *application) home(w http.ResponseWriter, r *http.Request) {
-
 	if r.URL.Path != "/" {
-		// http.NotFound(w, r)
 		app.notFound(w)
 		return
 	}
 
-	files := []string {
-		"./ui/html/base.html",
-		"./ui/html/partials/nav.html",
-		"./ui/html/pages/home.html",
-	}
+	// panic("oops! something went wrong")
 
-	ts, err := template.ParseFiles(files...)
-
+	snippets, err := app.snippets.Latest()
 	if err != nil {
 		app.serveError(w, err)
 		return
 	}
 
-	err = ts.ExecuteTemplate(w, "base", nil)
+	data := app.newTemplateData(r)
+	data.Snippets = snippets
 
-	if err != nil {
-		app.serveError(w, err)
-	}
-
-	// w.Write([]byte("Hello from snippetbox"))
+	app.render(w, http.StatusOK, "home.html", data)
 }
 
 func (app *application) snippetView(w http.ResponseWriter, r *http.Request) {
@@ -43,19 +35,39 @@ func (app *application) snippetView(w http.ResponseWriter, r *http.Request) {
 		app.notFound(w)
 		return
 	}
-	// w.Write([]byte("Display a specific snippet..."))
-	fmt.Fprintf(w, "Display a specific snippet with ID %d", id)
+
+	snippet, err := app.snippets.Get(id)
+	if err != nil {
+		if errors.Is(err, models.ErrNoRecord) {
+			app.notFound(w)
+		} else {
+			app.serveError(w, err)
+		}
+
+		return
+	}
+
+	data := app.newTemplateData(r)
+	data.Snippet = snippet
+
+	app.render(w, http.StatusOK, "view.html", data)
 }
 
 func (app *application) snippetCreate(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "POST" {
-		w.Header().Set("Allow", "POST")
-		// w.WriteHeader(405)
-		// w.Write([]byte("Method not allowed"))
-		// http.Error(w, "Method Not Allowed", 405)
-		// http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+	if r.Method != http.MethodPost {
+		w.Header().Set("Allow", http.MethodPost)
 		app.clientError(w, http.StatusMethodNotAllowed)
 		return
 	}
-	w.Write([]byte("Create a new snippet..."))
+
+	title := "0 snail"
+	content := "0 snail\nClimb Mount Fuji,\nBut slowly, slowly!\n\n- Kobayashi Issa"
+	expires := 7
+
+	id, err := app.snippets.Insert(title, content, expires)
+	if err != nil {
+		app.serveError(w, err)
+	}
+
+	http.Redirect(w, r, fmt.Sprintf("/snippet/view?id=%d", id), http.StatusSeeOther)
 }
