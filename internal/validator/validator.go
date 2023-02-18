@@ -6,12 +6,12 @@ import (
 	"unicode/utf8"
 )
 
-var EmailRx = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+\\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
-
 type Validator struct {
 	NonFieldErrors []string
-	FieldErrors map[string]string
+	FieldErrors    map[string]string
 }
+
+var EmailRx = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+\\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
 
 func (v *Validator) Valid() bool {
 	return len(v.FieldErrors) == 0 && len(v.NonFieldErrors) == 0

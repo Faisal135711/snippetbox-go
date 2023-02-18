@@ -1,33 +1,41 @@
 package main
 
 import (
+	"github.com/Faisal135711/snippetbox/internal/models"
 	"html/template"
+	"net/http"
 	"path/filepath"
 	"time"
-
-	"snippetbox.faisal135711.net/internal/models"
 )
 
 type templateData struct {
-	CurrentYear int
-	Snippet *models.Snippet
-	Snippets []*models.Snippet
-	Form any
-	Flash string
+	CurrentYear     int
+	Snippet         *models.Snippet
+	Snippets        []*models.Snippet
+	Form            any
+	Flash           string
 	IsAuthenticated bool
 }
 
 func humanDate(t time.Time) string {
-	return t.Format("02 Jan 2006 at 15:04")
+	return t.Format("02 Jan 2006 at  15:04")
 }
 
 var functions = template.FuncMap{
 	"humanDate": humanDate,
 }
 
+func (app *application) newTemplateData(r *http.Request) *templateData {
+	return &templateData{
+		CurrentYear:     time.Now().Year(),
+		Flash:           app.sessionManager.PopString(r.Context(), "flash"),
+		IsAuthenticated: app.isAuthenticated(r),
+	}
+}
+
 func newTemplateCache() (map[string]*template.Template, error) {
 	cache := map[string]*template.Template{}
-	
+
 	pages, err := filepath.Glob("./ui/html/pages/*.html")
 	if err != nil {
 		return nil, err
